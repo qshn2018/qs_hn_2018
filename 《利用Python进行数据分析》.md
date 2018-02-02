@@ -1,4 +1,4 @@
-数据分析
+《利用Python进行数据分析》
 =================
 numpy
 -------------------
@@ -418,7 +418,7 @@ np.random模块对Python内置的random进行了补充，增加了一些用于�
 |beta|产生Beta分布的样本值|
 |chisquare|产生卡方分布的样本值|
 |gamma|产生Gamma分布的样本值|
-|uniform|产生在[0, 1)中均匀分布的样本值|
+|uniform|产生在0到1中（前闭后开）均匀分布的样本值|
 
 
 ### 范例：随机漫步
@@ -476,6 +476,210 @@ numpy高级应用
 
 pandas
 -------------------
+### 0-导入
+``` python
+from pandas import Series, DataFrame                       # 因为Series和DataFrame用的次数非常多，所以将其引入本地命名空间中会更方便
+import pandas                                              # 行业约定
+```
+
+### 1-数据结构
+#### Series
+##### 创建
+``` python
+obj1 = Series([4, 7, -5, 3])                               # 创建Ｓeries对象
+obj1                                                       # --> 0     4
+                                                                 1     7
+                                                                 2    -5
+                                                                 3     3
+```
+##### 可以将Ｓeries看成一个定长的有序字典
+如果数据存放在一个Ｐython字典中，也可以直接通过这个字典创建Ｓeries
+``` python
+sdata = ['ohio':35000, 'texas':71000, 'oregon':16000, 'utah':5000]
+obj3 = Series(sdata)
+obj3                                                       # --> ohio      35000
+                                                                 oregon    16000
+                                                                 texas     71000
+                                                                 utah       5000
+```
+如果只传入一个字典，则结果Ｓeries中的索引就是原字典的键（有序排列）
+``` python
+states = ['california', 'ohio', 'oregon', 'texas']
+obj4 = Series([sdata, index = states])
+obj4                                                       # --> california    NaN
+                                                                 ohio        35000
+                                                                 oregon      16000
+                                                                 texas       71000
+# 如果找不到索引对应的项，结果就是ＮaＮ（not a number）
+```
+可以用在许多原本需要字典参数的函数中
+``` python
+'b' in obj2                                                # --> True
+'e' in obj2                                                # --> Flase
+```
+##### 访问属性：值、索引（index）、name属性
+``` python
+obj1.values                                                # --> array([4, 7, -5, 3])
+obj1.index                                                 # --> RangeIndex(start = 0, stop = 4, step = 1)
+
+obj1.index = ['bob', 'steve', 'jeff', 'ryan']              # Series的索引可以通过赋值的方式就地修改
+obj1                                                       # --> bob      4
+                                                                 steve    7
+                                                                 jeff    -5
+                                                                 ryan     3
+
+# Ｓeries对象本身及其索引都有一个name属性，该属性跟pandas其他的关键功能关系非常密切
+obj4.name = 'population'                                   # 给Ｓeries对象的name属性赋值
+obk4.index.name = 'states'                                 # 给Ｓeries对象的index的name属性赋值
+obj4                                                       # --> states
+                                                                 california    NaN
+                                                                 ohio        35000
+                                                                 oregon      16000
+                                                                 texas       71000
+```
+##### 创建时自定义索引
+``` python
+obj2 = Series([4, 7, -5, 3], index = ['d', 'b', 'a', 'c']) # 创建时自定义索引
+obj2                       # --> d     4
+                                 b     7
+                                 a    -5
+                                 c     3
+obj2.index                 # --> Index(['d', 'b', 'a', 'c'], dtype = 'object')
+```
+
+##### 索引
+``` python
+obj2['a']                  # --> -5
+obj2['d'] = 6              # 通过赋值更改数据
+
+# 通过一个list索引多个数据
+obj2[['c', 'a', 'd']]      # --> c     3
+                                 a    -5
+                                 d     6
+```
+numpy数组运算都会保留索引和值之间的链接
+```python
+# 通过bool数组进行过滤
+obj2[obj > 0]              # --> d    6
+                                 b    7
+                                 c    3
+
+# 标量乘法
+obj2 * 2                   # --> d     12
+                                 b     14
+                                 a    -10
+                                 c     6
+# 应用数学函数
+np.exp(obj2)               # --> d     403.428793
+                                 b    1096.633158
+                                 a       0.006738
+                                 c      20.085537
+```
+
+##### 数据缺失
+pandas的`isnull()`和`notnull()`函数可用于检测缺失数据
+``` python
+pd.isnull(obj4)            # --> california    True
+                                 ohio         False
+                                 oregon       False
+                                 texas        False
+pd.notnull(obj4)           # --> california    False
+                                 ohio           True
+                                 oregon         True
+                                 texas          True
+
+# Series也有类似的实例方法
+obj4.isnull()              # --> california    True
+                                 ohio         False
+                                 oregon       False
+                                 texas        False
+```
+##### 数据对齐
+Series最重要的一个功能是：在算术运算中，会自动对齐不同索引的数据
+``` python
+obj3 + obj4                # --> california    NaN
+                                 ohio        70000
+                                 oregon      32000
+                                 texas      142000
+                                 utah          NaN
+```
+#### DataFrame
+ＤataＦrame是一个表格型的数据结构，它含有一组有序的列，每列可以是不同的值类型。
+ＤataＦrame既有行索引也有列索引，它可以被看作由Ｓeries组成的字典（共同用一个索引）
+##### 创建
+创建ＤataＦrame的方法很多，最常用的是一种直接传入一个由等长列表或numpy数组组成的字典
+``` python
+data = {'state':['ohio', 'ohio', 'ohio', 'nevada', 'nevada'], 
+        'year' = ['2000', '2001', '2002', '2001', '2002'], 
+        'pop' = [1.5, 1.7, 3.6, 2.4, 2.9]}
+frame = DataFrame(data)
+frame                      # -->    pop   state  year
+                                                                 0  1.5    ohio  2000
+                                                                 1  1.7    ohio  2001
+                                                                 2  3.6    ohio  2002
+                                                                 3  2.4  nevada  2001
+                                                                 4  2.9  nevada  2002
+# DataFrame会自动加上索引，且全部列会被有序排列
+# 如果指定了列序列，则ＤataＦrame的列就会被按照指定顺序进行排列
+DataFrame(data, columns = ['year', 'state', 'pop'])
+
+# 如果传入的列在数据中找不到，就会产生ＮaＮ
+frame2 = DataFrame(data, columns = ['year', 'state', 'pop', 'debt'],
+                         index = ['one', 'two', 'three', 'four', 'five'])
+frame2                     # -->       year   state  pop  debt
+                                 one   2000    ohio  1.5   NaN
+                                 two   2001    ohio  1.7   NaN
+                                 three 2002    ohio  3.6   NaN
+                                 four  2001  nevada  2.4   NaN
+                                 five  2002  nevada  2.9   NaN
+frame2.columns             # --> Index([year, states, pop, debt], dtype = object)
+```
+##### 索引          
+通过类似字典标记的方式或属性的方式，可以将DataFrame的列获取为一个Ｓeries
+``` python
+frame2['state']
+frame2.year                # 注意，返回的Ｓeries拥有原DataFrame相同的索引，且其name属性也已经被相应的设置好了。
+
+# 列可以通过赋值的方式进行修改
+frame2['debt'] = 16.5                         # 可以给空的debt列赋上一个标量
+frame2['debt'] = np.arange(5)                 # 也可以赋上一组值
+
+# 将列表或数组
+
+# 对行(索引字段)
+frame2.ix['three']         # --> year   2002
+                                 state  ohio
+                                 pop     3.6
+                                 debt    NaN
+```
+##### 
+#### 索引对象
+
+### 2-基本功能
+#### 重新索引
+#### 丢弃指定轴上的项
+#### 索引、选取和过滤
+#### 算术运算和数据对齐
+#### 函数应用和映射
+#### 排序和排名
+#### 带有重复值的轴索引
+
+### 3-汇总和计算描述统计
+#### 相关系数与协方差
+#### 唯一值、值计数以及成员资格
+
+### 4-处理缺失数据
+#### 滤除缺失数据
+#### 填充缺失数据
+
+### 5-层次化索引
+#### 重排分级顺序
+#### 根据级别汇总统计
+#### 使用DataFrame的列
+
+### 6-其他有关Pandas的话题
+#### 整数索引
+#### 面板数据
 
 
 
