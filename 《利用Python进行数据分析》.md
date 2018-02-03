@@ -634,6 +634,26 @@ frame2                     # -->       year   state  pop  debt
                                  five  2002  nevada  2.9   NaN
 frame2.columns             # --> Index([year, states, pop, debt], dtype = object)
 ```
+另一种常见的数据形式是嵌套字典
+
+|类型|说明|
+|---|---|
+|二维ndarray|数据矩阵，还可以传入行标和列标|
+|由列表或元组组成的列表|类似于“二维ndarray”|
+|numpy的MaskedArray|类似于“二维ndarray”的情况，只是掩码值在结果DataFrame会变成NA/缺失值|
+| | |
+| | |
+|由数组、列表或元组组成的字典|每个序列会变成DataFrame的一列。所有序列的长度必须相同|
+|numpy的结构化/记录数组|类似于“由数组组成的字典”|
+| | |
+| | |
+|由Series组成的字典|每个Series会变成一列。如果没有显式指定索引，则各Series的索引会被合并成结果的行索引|
+|由字典组成的字典|各内层字典会成为一列。key会被合并成结果的行索引，跟“由Series组成的字典”的情况一样|
+| | |
+| | |
+|字典或Series的列表|各项将会成为DataFrame的一行。字典的key或Series索引的并集将会成为DataFrame的列标|
+|另一个DataFrame|该DataFrame的索引将会被沿用，除非显式指定了其他索引|
+
 ##### 索引          
 通过类似字典标记的方式或属性的方式，可以将DataFrame的列获取为一个Ｓeries
 ``` python
@@ -654,6 +674,19 @@ frame2.ix['three']         # --> year   2002
 ```
 ##### 
 #### 索引对象
+|方法|说明|
+|---|---|
+|append|连接另一个Index对象，产生一个新的Index|
+|diff|计算差集，并得到一个Index|
+|intersection|计算交集|
+|union|计算并集|
+|isin|计算一个指示各值是否都包含在参数集合中的bool类型数组|
+|delete|删除索引i处的元素，并得到新的Index|
+|drop|删除传入的值，并得到一个新的Index|
+|insert|将元素插入到索引i处，并得到一个新的Index|
+|is_monotonic|当各元素均大于等于前一个元素时，返回True|
+|is_unique|当Index没有重复值时，返回True|
+|unique|计算Index中唯一值的数组|
 
 ### 2-基本功能
 #### 重新索引
